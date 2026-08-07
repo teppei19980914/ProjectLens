@@ -1,0 +1,152 @@
+{
+  "common": {
+    "appName": "ProjectLens",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "reset": "リセット",
+    "delete": "削除",
+    "close": "閉じる",
+    "confirm": "確認",
+    "back": "戻る",
+    "loading": "読み込み中...",
+    "unknownError": "不明なエラーが発生しました",
+    "notInTauriRuntime": {
+      "title": "ProjectLensのウィンドウから開いてください",
+      "body": "このページはWebブラウザから直接開かれています。ProjectLensはTauriのネイティブウィンドウ内でのみ動作します。",
+      "instruction": "「npm run tauri dev」を実行すると表示される専用ウィンドウを使用してください（ブラウザに表示される http://localhost:1420 を直接開かないでください）。"
+    }
+  },
+  "home": {
+    "title": "ホーム",
+    "selectFolder": "プロジェクトフォルダを選択",
+    "startAnalysis": "解析を開始",
+    "recentProjects": "最近のプロジェクト",
+    "noRecentProjects": "最近のプロジェクトはありません",
+    "openHistory": "解析履歴を見る",
+    "openSettings": "設定"
+  },
+  "analysis": {
+    "title": "解析",
+    "phase": {
+      "scan": "スキャン",
+      "static": "静的解析",
+      "ai": "AI解析",
+      "doc_gen": "ドキュメント生成"
+    },
+    "currentFile": "処理中のファイル",
+    "processedOf": "{{processed}} / {{total}} 件",
+    "cancel": "解析をキャンセル",
+    "cancelling": "キャンセル中...",
+    "cancelled": "解析をキャンセルしました",
+    "completed": "解析が完了しました",
+    "errorOccurred": "エラーが発生しました"
+  },
+  "result": {
+    "title": "解析結果",
+    "tabs": {
+      "systemSpec": "システム仕様書",
+      "basicDesign": "システム基本設計書",
+      "detailDesign": "詳細設計書"
+    },
+    "importanceScore": "重要度",
+    "cycleWarning": "循環依存が検出されました",
+    "noSelection": "左の一覧からファイルを選択してください",
+    "systemSpec": {
+      "purpose": "目的",
+      "mainFeatures": "主要機能",
+      "userFlows": "利用シーン"
+    },
+    "basicDesign": {
+      "architecturePattern": "アーキテクチャパターン",
+      "modules": "モジュール構成",
+      "technicalDebts": "技術的負債",
+      "noneDetected": "検出なし"
+    },
+    "detail": {
+      "publicApis": "公開API",
+      "potentialIssues": "潜在的問題"
+    }
+  },
+  "export": {
+    "title": "エクスポート",
+    "docTypes": "出力する成果物",
+    "format": "形式",
+    "embedMermaid": "Mermaid図のソースを埋め込む",
+    "outputDir": "出力先フォルダ",
+    "chooseOutputDir": "フォルダを選択",
+    "exportButton": "エクスポート",
+    "exporting": "エクスポート中...",
+    "exportSuccess": "エクスポートが完了しました",
+    "exportError": "エクスポートに失敗しました"
+  },
+  "settings": {
+    "title": "設定",
+    "sections": {
+      "scan": "スキャン設定",
+      "ai": "AI設定",
+      "cache": "キャッシュ設定",
+      "export": "エクスポート設定",
+      "ui": "UI設定"
+    },
+    "scan": {
+      "excludePatterns": "除外パターン",
+      "maxFileSizeKb": "ファイルサイズ上限 (KB)",
+      "maxFileCount": "ファイル数上限",
+      "rpaEnabled": "RPA定義ファイルの解析を有効にする"
+    },
+    "ai": {
+      "concurrency": "並列リクエスト数",
+      "timeoutSecs": "タイムアウト (秒)",
+      "maxRetries": "最大リトライ回数",
+      "assistantUid": "使用するアシスタント",
+      "maxTokensPerFile": "ファイルあたりトークン上限"
+    },
+    "cache": {
+      "enabled": "キャッシュを有効にする",
+      "ttlDays": "キャッシュ保持日数",
+      "maxSizeMb": "キャッシュサイズ上限 (MB)"
+    },
+    "saved": "設定を保存しました",
+    "resetConfirm": "既定値にリセットしますか？"
+  },
+  "auth": {
+    "title": "NewtonX認証",
+    "host": "Host（会社サブドメイン）",
+    "hostPlaceholder": "例: seraku",
+    "personalAccessToken": "Personal Access Token (PAT)",
+    "patPlaceholder": "NewtonX Web版で発行したPATを貼り付け",
+    "save": "PATを保存",
+    "clear": "PATを削除",
+    "testConnection": "接続テスト",
+    "status": {
+      "authenticated": "認証済み",
+      "notAuthenticated": "未認証"
+    },
+    "testSuccess": "接続に成功しました",
+    "testFailure": "接続に失敗しました"
+  },
+  "history": {
+    "title": "解析履歴",
+    "columns": {
+      "startedAt": "開始日時",
+      "status": "ステータス",
+      "totalTokens": "トークン数",
+      "durationMs": "所要時間"
+    },
+    "status": {
+      "completed": "完了",
+      "cancelled": "キャンセル",
+      "error": "エラー"
+    },
+    "empty": "解析履歴はありません",
+    "deleteConfirm": "この履歴を削除しますか？"
+  },
+  "errorCategory": {
+    "scan": "スキャンエラー",
+    "static": "静的解析エラー",
+    "ai": "AI解析エラー",
+    "cache": "キャッシュエラー",
+    "export": "エクスポートエラー",
+    "config": "設定エラー"
+  }
+}

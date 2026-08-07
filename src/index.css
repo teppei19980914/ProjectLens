@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "Segoe UI",
+    "Yu Gothic UI",
+    "Hiragino Kaku Gothic ProN",
+    system-ui,
+    sans-serif;
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens/src-tauri/sidecar\" *)",
+      "Read(//c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens/src-tauri/sidecar/**)",
+      "Bash(rm -f pl_verify_fix_config2.json)",
+      "Bash(/c/tmp/pl_verify_fix/Scripts/python newtonx_bridge.py pl_verify_fix_config2.json)",
+      "Bash(rm -rf /c/tmp/pl_verify_fix)",
+      "Read(//c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens/src/lib/**)",
+      "Bash(cd \"/c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens\" && npm run build 2>&1 | tail -40)",
+      "Read(//c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens/**)"
+    ]
+  }
+}
