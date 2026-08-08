@@ -66,7 +66,10 @@ pub async fn newtonx_list_assistants(state: tauri::State<'_, AppState>) -> Resul
 pub async fn test_ai_connection(state: tauri::State<'_, AppState>) -> Result<TestConnectionResponse, AppError> {
     let client = state.spawn_ai_client().await?;
     match client.test_connection().await {
-        Ok(message) => Ok(TestConnectionResponse { ok: true, message }),
+        Ok(result) => Ok(TestConnectionResponse {
+            ok: result.ok,
+            message: result.message,
+        }),
         Err(e) => Ok(TestConnectionResponse {
             ok: false,
             message: e.to_string(),

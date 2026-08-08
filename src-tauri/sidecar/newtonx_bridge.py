@@ -131,10 +131,14 @@ def handle_auth_clear_credentials(ctx: Context, params: Dict[str, Any]) -> Dict[
 
 
 def handle_ai_test(ctx: Context, params: Dict[str, Any]) -> Dict[str, Any]:
+    # get_model_status() は疎通・認証に問題がなくても、テナントが/models/status・/system/models
+    # 双方を提供しない場合は空dict({})を返す仕様（ADK側の意図的なフォールバック）。
+    # 例外が発生しなかった時点で疎通・認証は成功しているため、モデル数の多寡はokの判定に使わない
+    # （実機確認: 本フィールドが常に0/0のテナントでも解析自体は正常に動作する）。
     status = ctx.client.get_model_status()
     available = sum(1 for v in status.values() if v)
     total = len(status)
-    return {"ok": available > 0, "message": f"利用可能なモデル: {available}/{total}"}
+    return {"ok": True, "message": f"利用可能なモデル: {available}/{total}"}
 
 
 def handle_assistants_list(ctx: Context, params: Dict[str, Any]) -> list[Dict[str, Any]]:

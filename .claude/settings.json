@@ -8,7 +8,11 @@
       "Bash(rm -rf /c/tmp/pl_verify_fix)",
       "Read(//c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens/src/lib/**)",
       "Bash(cd \"/c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens\" && npm run build 2>&1 | tail -40)",
-      "Read(//c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens/**)"
+      "Read(//c/Users/teppe/OneDrive/PersonalFolder/GitHubRepository_teppei19980914/ProjectLens/**)",
+      "Bash(xxd start-dev.bat)",
+      "Bash(python3 -c ' *)",
+      "Bash(xargs -I{} echo {})",
+      "PowerShell(Get-ChildItem -Path \"$env:APPDATA\\\\ProjectLens\" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName, Length, LastWriteTime | Format-List)"
     ]
   }
 }

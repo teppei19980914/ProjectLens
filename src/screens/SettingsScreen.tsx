@@ -110,6 +110,15 @@ export function SettingsScreen() {
             onChange={(e) => update((d) => ({ ...d, ai: { ...d.ai, maxTokensPerFile: Number(e.target.value) } }))}
           />
         </label>
+        <label className="flex flex-col gap-1 text-sm">
+          {t("settings.ai.pythonExe")}
+          <input
+            type="text"
+            className="w-full rounded border px-2 py-1 dark:bg-gray-800"
+            value={config.ai.pythonExe}
+            onChange={(e) => update((d) => ({ ...d, ai: { ...d.ai, pythonExe: e.target.value } }))}
+          />
+        </label>
       </Card>
 
       <Card className="flex flex-col gap-3">

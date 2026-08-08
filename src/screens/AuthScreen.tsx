@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { clearNewtonxCredentials, loadConfig, newtonxAuthStatus, saveNewtonxCredentials, testAiConnection } from "@/lib/tauri";
+import { clearNewtonxCredentials, formatInvokeError, loadConfig, newtonxAuthStatus, saveNewtonxCredentials, testAiConnection } from "@/lib/tauri";
 import { useUiStore } from "@/store/uiStore";
 
 export function AuthScreen() {
@@ -13,6 +13,7 @@ export function AuthScreen() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadConfig().then((c) => setHost(c.ai.newtonx.host));
@@ -23,11 +24,14 @@ export function AuthScreen() {
 
   const handleSave = async () => {
     setBusy(true);
+    setError(null);
     try {
       await saveNewtonxCredentials(host, pat);
       const status = await newtonxAuthStatus();
       setAuthenticated(status.authenticated);
       setPat("");
+    } catch (e) {
+      setError(formatInvokeError(e));
     } finally {
       setBusy(false);
     }
@@ -35,9 +39,12 @@ export function AuthScreen() {
 
   const handleClear = async () => {
     setBusy(true);
+    setError(null);
     try {
       await clearNewtonxCredentials();
       setAuthenticated(false);
+    } catch (e) {
+      setError(formatInvokeError(e));
     } finally {
       setBusy(false);
     }
@@ -45,9 +52,12 @@ export function AuthScreen() {
 
   const handleTest = async () => {
     setBusy(true);
+    setError(null);
     try {
       const result = await testAiConnection();
       setTestResult(result);
+    } catch (e) {
+      setError(formatInvokeError(e));
     } finally {
       setBusy(false);
     }
@@ -101,6 +111,8 @@ export function AuthScreen() {
             {testResult.ok ? t("auth.testSuccess") : t("auth.testFailure")}: {testResult.message}
           </p>
         )}
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </Card>
 
       <Button variant="ghost" onClick={() => navigate("home")}>

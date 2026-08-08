@@ -132,6 +132,12 @@ pub struct AiConfig {
     pub detail_level: String,
     pub max_tokens_per_file: u32,
     pub output_language: String,
+    /// Pythonサイドカー（`newtonx_bridge.py`）起動に使う実行ファイルパス（04_実装詳細.md §3.2）。
+    /// PATHの `python` に依存すると、Windowsのアプリ実行エイリアス（`WindowsApps\python.exe`）に
+    /// 解決されて無応答のままハングする不具合が実機で発生したため、既定値はプロジェクト同梱の
+    /// `myvenv` を絶対パスで指す。設定画面から変更可能（ゼロハードコーディング原則）。
+    #[serde(default = "default_python_exe")]
+    pub python_exe: String,
 }
 
 impl Default for AiConfig {
@@ -147,8 +153,21 @@ impl Default for AiConfig {
             detail_level: "standard".into(),
             max_tokens_per_file: 8000,
             output_language: "ja".into(),
+            python_exe: default_python_exe(),
         }
     }
+}
+
+/// 開発時のPythonサイドカー実行ファイルの既定パス（`<プロジェクトルート>/myvenv/Scripts/python.exe`）。
+/// 配布時はPyInstaller化したサイドカーバイナリに置き換える想定のため、この既定値は開発専用
+/// （残課題: 04_実装詳細.md §10「サイドカー配布方式」）。
+fn default_python_exe() -> String {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .map(|project_root| project_root.join("myvenv").join("Scripts").join("python.exe"))
+        .unwrap_or_else(|| std::path::PathBuf::from("python"))
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// NewtonX固有設定。PAT本体はここに含めない（OS資格情報ストアに保存。04_実装詳細.md §3.4）

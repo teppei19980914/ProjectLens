@@ -15,6 +15,15 @@ pub struct AssistantInfo {
     pub name: String,
 }
 
+/// 接続テスト（ai.test）の結果。`ok` はRPC往復の成否ではなく、サイドカーが判定した
+/// アプリケーションレベルの成否（04_実装詳細.md §3.2 `ai.test` → `get_model_status()`）を表す。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionTestResult {
+    pub ok: bool,
+    pub message: String,
+}
+
 #[async_trait]
 pub trait AiClient: Send + Sync {
     /// 認証状態を確認する。
@@ -27,7 +36,7 @@ pub trait AiClient: Send + Sync {
     async fn clear_credentials(&self) -> AppResult<()>;
 
     /// 接続テスト（get_model_status）。
-    async fn test_connection(&self) -> AppResult<String>;
+    async fn test_connection(&self) -> AppResult<ConnectionTestResult>;
 
     /// 選択可能なアシスタント一覧を取得する。
     async fn list_assistants(&self) -> AppResult<Vec<AssistantInfo>>;

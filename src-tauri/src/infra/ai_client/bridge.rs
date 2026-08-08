@@ -2,7 +2,7 @@
 //! Rust ⇔ Python 間は標準入出力上の JSON Lines RPC（1行1リクエスト/1行1レスポンス）。
 //! RPC処理をメソッドごとに複製せず、`call()` 1本に集約する（CLAUDE.md 原則2.2.1）。
 
-use super::{AiClient, AssistantInfo};
+use super::{AiClient, AssistantInfo, ConnectionTestResult};
 use crate::models::constants::newtonx_rpc;
 use crate::models::{AppError, AppResult};
 use async_trait::async_trait;
@@ -96,12 +96,12 @@ impl NewtonXBridge {
             }
         });
 
-        // stderr: ログとして扱う（本バージョンでは破棄。将来的にファイル/コンソールへ転送）
+        // stderr: ログとして扱う（本バージョンではコンソールへ転送。将来的に構造化ロギングへ接続する）
         if let Some(stderr) = stderr {
             tokio::spawn(async move {
                 let mut lines = BufReader::new(stderr).lines();
-                while let Ok(Some(_line)) = lines.next_line().await {
-                    // TODO: 構造化ロギングへ接続する
+                while let Ok(Some(line)) = lines.next_line().await {
+                    eprintln!("[newtonx-sidecar] {line}");
                 }
             });
         }
@@ -224,13 +224,16 @@ impl AiClient for NewtonXBridge {
         Ok(())
     }
 
-    async fn test_connection(&self) -> AppResult<String> {
+    async fn test_connection(&self) -> AppResult<ConnectionTestResult> {
         let result = self.call(newtonx_rpc::AI_TEST, json!({})).await?;
-        Ok(result
-            .get("message")
-            .and_then(|v| v.as_str())
-            .unwrap_or("OK")
-            .to_string())
+        Ok(ConnectionTestResult {
+            ok: result.get("ok").and_then(|v| v.as_bool()).unwrap_or(false),
+            message: result
+                .get("message")
+                .and_then(|v| v.as_str())
+                .unwrap_or("OK")
+                .to_string(),
+        })
     }
 
     async fn list_assistants(&self) -> AppResult<Vec<AssistantInfo>> {

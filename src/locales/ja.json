@@ -99,7 +99,8 @@
       "timeoutSecs": "タイムアウト (秒)",
       "maxRetries": "最大リトライ回数",
       "assistantUid": "使用するアシスタント",
-      "maxTokensPerFile": "ファイルあたりトークン上限"
+      "maxTokensPerFile": "ファイルあたりトークン上限",
+      "pythonExe": "Pythonサイドカーの実行ファイルパス"
     },
     "cache": {
       "enabled": "キャッシュを有効にする",

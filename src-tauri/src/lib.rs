@@ -47,7 +47,6 @@ pub fn run() {
                 history_repo,
                 sidecar_script_path,
                 sidecar_config_path,
-                python_exe: "python".to_string(),
                 active_cancel_token: Mutex::new(None),
                 last_analysis: Mutex::new(None),
             });
@@ -71,6 +70,7 @@ pub fn run() {
             commands::apikey::clear_newtonx_credentials,
             commands::apikey::newtonx_list_assistants,
             commands::apikey::test_ai_connection,
+            commands::export::select_output_folder,
             commands::export::export_document,
         ])
         .run(tauri::generate_context!())

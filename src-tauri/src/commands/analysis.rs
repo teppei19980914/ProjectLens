@@ -1,21 +1,14 @@
 //! 解析コマンド（04_実装詳細.md §7）。
 
+use crate::commands::pick_folder;
 use crate::domain::orchestrator::Orchestrator;
 use crate::models::{AnalysisResultSnapshot, AnalysisSummary, AppError};
 use crate::state::AppState;
-use tauri_plugin_dialog::DialogExt;
 use tokio_util::sync::CancellationToken;
 
 #[tauri::command]
 pub async fn select_project_folder(app: tauri::AppHandle) -> Result<Option<String>, AppError> {
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    app.dialog().file().pick_folder(move |folder| {
-        let _ = tx.send(folder);
-    });
-    let selected = rx
-        .await
-        .map_err(|_| AppError::scan("フォルダ選択ダイアログの応答を取得できませんでした"))?;
-    Ok(selected.map(|p| p.to_string()))
+    pick_folder(&app, AppError::scan).await
 }
 
 #[tauri::command]

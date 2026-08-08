@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DocTypes, ExportFormats, type DocType, type ExportFormat } from "@/lib/constants";
-import { exportDocument } from "@/lib/tauri";
+import { exportDocument, selectOutputFolder } from "@/lib/tauri";
 import { useUiStore } from "@/store/uiStore";
 
 const ALL_DOC_TYPES: DocType[] = [DocTypes.SYSTEM_SPEC, DocTypes.BASIC_DESIGN, DocTypes.DETAIL_DESIGN];
@@ -22,6 +22,11 @@ export function ExportScreen() {
 
   const toggleDocType = (docType: DocType) => {
     setDocTypes((prev) => (prev.includes(docType) ? prev.filter((d) => d !== docType) : [...prev, docType]));
+  };
+
+  const handleChooseOutputDir = async () => {
+    const path = await selectOutputFolder();
+    if (path) setOutputDir(path);
   };
 
   const handleExport = async () => {
@@ -69,13 +74,18 @@ export function ExportScreen() {
 
         <div>
           <h2 className="mb-2 text-sm font-semibold">{t("export.outputDir")}</h2>
-          <input
-            type="text"
-            value={outputDir}
-            onChange={(e) => setOutputDir(e.target.value)}
-            placeholder="projectlens-docs/"
-            className="w-full rounded border px-2 py-1 text-sm dark:bg-gray-800"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={outputDir}
+              onChange={(e) => setOutputDir(e.target.value)}
+              placeholder="projectlens-docs/"
+              className="w-full rounded border px-2 py-1 text-sm dark:bg-gray-800"
+            />
+            <Button variant="secondary" onClick={handleChooseOutputDir}>
+              {t("export.chooseOutputDir")}
+            </Button>
+          </div>
         </div>
 
         <Button onClick={handleExport} disabled={status === "loading" || docTypes.length === 0}>

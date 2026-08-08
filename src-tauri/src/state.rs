@@ -26,7 +26,6 @@ pub struct AppState {
     pub history_repo: Arc<HistoryRepo>,
     pub sidecar_script_path: PathBuf,
     pub sidecar_config_path: PathBuf,
-    pub python_exe: String,
     pub active_cancel_token: Mutex<Option<CancellationToken>>,
     pub last_analysis: Mutex<Option<LastAnalysisData>>,
 }
@@ -37,7 +36,7 @@ impl AppState {
     pub async fn spawn_ai_client(&self) -> AppResult<Arc<dyn AiClient>> {
         let config = self.config_store.load()?;
         let bridge = NewtonXBridge::spawn(
-            &self.python_exe,
+            &config.ai.python_exe,
             &self.sidecar_script_path,
             &self.sidecar_config_path,
             config.ai.newtonx.assistant_uid,

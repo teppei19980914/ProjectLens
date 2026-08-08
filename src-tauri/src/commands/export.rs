@@ -1,8 +1,14 @@
 //! エクスポートコマンド（04_実装詳細.md §7/§11）。直近の解析結果を元に再出力する。
 
+use crate::commands::pick_folder;
 use crate::domain::doc_generator;
 use crate::models::{AppError, ExportResult};
 use crate::state::AppState;
+
+#[tauri::command]
+pub async fn select_output_folder(app: tauri::AppHandle) -> Result<Option<String>, AppError> {
+    pick_folder(&app, AppError::export).await
+}
 
 #[tauri::command]
 pub async fn export_document(
