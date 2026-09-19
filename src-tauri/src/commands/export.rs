@@ -1,7 +1,7 @@
 //! エクスポートコマンド（04_実装詳細.md §7/§11）。直近の解析結果を元に再出力する。
 
 use crate::commands::pick_folder;
-use crate::domain::doc_generator;
+use crate::domain::doc_generator::{self, DetailSources};
 use crate::models::{AppError, ExportResult};
 use crate::state::AppState;
 
@@ -28,14 +28,13 @@ pub async fn export_document(
         _ => doc_generator::resolve_output_dir(&data.project_path, ""),
     };
 
-    doc_generator::generate(
-        &resolved_dir,
-        &doc_types,
-        &format,
-        embed_mermaid,
-        &data.project_result,
-        &data.static_results,
-        &data.file_results,
-        &data.rpa_components,
-    )
+    let sources = DetailSources {
+        static_results: &data.static_results,
+        file_results: &data.file_results,
+        rpa_components: &data.rpa_components,
+        vba_components: &data.vba_components,
+        scanned_files: &data.scanned_files,
+    };
+
+    doc_generator::generate(&resolved_dir, &doc_types, &format, embed_mermaid, &data.project_result, &sources)
 }

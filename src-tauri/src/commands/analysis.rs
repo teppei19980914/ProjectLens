@@ -49,6 +49,8 @@ pub async fn start_full_analysis(
                 static_results: output.static_results,
                 file_results: output.file_results,
                 rpa_components: output.rpa_components,
+                vba_components: output.vba_components,
+                scanned_files: output.scanned_files,
                 project_path: std::path::PathBuf::from(&project_path),
             });
             Ok(output.summary)

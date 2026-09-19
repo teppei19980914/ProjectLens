@@ -50,12 +50,16 @@ pub const CURRENT_SCHEMA_VERSION: &str = "1";
 pub const PROMPT_VERSION: &str = "1.1.0";
 /// RPA専用プロンプトのバージョン（04_実装詳細.md §8.4。コード用プロンプト変更でRPAキャッシュを無効化しないため独立管理）
 pub const RPA_PROMPT_VERSION: &str = "1.0.0";
+/// VBAマクロ専用プロンプトのバージョン（04_実装詳細.md §8.6。コード/RPA用プロンプト変更でVBAキャッシュを無効化しないため独立管理）
+pub const VBA_PROMPT_VERSION: &str = "1.0.0";
 
 /// 出力ドキュメント種別（04_実装詳細.md §11）
 pub mod doc_types {
     pub const SYSTEM_SPEC: &str = "systemSpec";
     pub const BASIC_DESIGN: &str = "basicDesign";
     pub const DETAIL_DESIGN: &str = "detailDesign";
+    /// ディレクトリ構造ドキュメント（04_実装詳細.md §11。既定では出力対象外＝オプトイン）
+    pub const DIRECTORY_STRUCTURE: &str = "directoryStructure";
 }
 
 /// 既定出力先（プロジェクトフォルダ直下のサブディレクトリ名。04_実装詳細.md §4/§11.2）
@@ -64,6 +68,7 @@ pub mod export_paths {
     pub const SYSTEM_SPEC_FILENAME: &str = "system-spec";
     pub const BASIC_DESIGN_FILENAME: &str = "basic-design";
     pub const DETAIL_DESIGN_SUBDIR: &str = "detail";
+    pub const DIRECTORY_STRUCTURE_FILENAME: &str = "directory-structure";
 }
 
 /// RPAツール種別（04_実装詳細.md §8.1、config.scan.rpa.tools と対応）
@@ -71,6 +76,11 @@ pub mod rpa_tools {
     pub const POWER_PLATFORM: &str = "powerplatform";
     pub const PAD: &str = "pad";
     pub const UIPATH: &str = "uipath";
+}
+
+/// マクロ（VBA等）ツール種別（04_実装詳細.md §8.6）
+pub mod macro_tools {
+    pub const EXCEL_VBA: &str = "excel_vba";
 }
 
 /// NewtonXサイドカー RPCメソッド名（04_実装詳細.md §3.2）

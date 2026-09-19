@@ -35,6 +35,7 @@ pub struct ScanConfig {
     pub max_file_count: u64,
     pub extensions: Vec<String>,
     pub rpa: RpaScanConfig,
+    pub vba: VbaScanConfig,
 }
 
 impl Default for ScanConfig {
@@ -67,6 +68,7 @@ impl Default for ScanConfig {
                 ".hpp".into(),
             ],
             rpa: RpaScanConfig::default(),
+            vba: VbaScanConfig::default(),
         }
     }
 }
@@ -115,6 +117,27 @@ impl Default for RpaDetectionPatterns {
             ],
             pad: vec!["*.robin".into(), "*.pad.txt".into()],
             uipath: vec!["project.json".into(), "*.xaml".into()],
+        }
+    }
+}
+
+/// VBAマクロ（Excel .xlsm/.xlsb）検出設定（04_実装詳細.md §8.6）。
+/// レガシー.xls・パスワード保護VBAプロジェクトはv1では対象外（残課題: 04_実装詳細.md §10）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VbaScanConfig {
+    pub enabled: bool,
+    pub extensions: Vec<String>,
+    pub max_file_size_kb: u64,
+}
+
+impl Default for VbaScanConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            extensions: vec![".xlsm".into(), ".xlsb".into()],
+            // Excelワークブックはコードファイルより大きくなりやすいため、RPAより大きめの既定値とする
+            max_file_size_kb: 10240,
         }
     }
 }

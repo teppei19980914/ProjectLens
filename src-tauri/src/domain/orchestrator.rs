@@ -2,9 +2,11 @@
 //! 各フェーズから直接emitせず、本ファイルのヘルパーに集約する（CLAUDE.md 原則2.2.1）。
 
 use crate::domain::ai_analyzer::AiAnalyzer;
+use crate::domain::doc_generator::DetailSources;
 use crate::domain::rpa_analyzer;
 use crate::domain::scanner::Scanner;
 use crate::domain::static_analyzer::{dependency_graph, StaticAnalyzer};
+use crate::domain::vba_analyzer;
 use crate::infra::ai_client::AiClient;
 use crate::infra::cache_repo::CacheRepo;
 use crate::infra::history_repo::{HistoryRepo, NewHistoryEntry};
@@ -30,6 +32,8 @@ pub struct FullAnalysisOutput {
     pub static_results: Vec<StaticAnalysisResult>,
     pub file_results: Vec<FileAnalysisResult>,
     pub rpa_components: Vec<crate::models::RpaComponent>,
+    pub vba_components: Vec<crate::models::VbaComponent>,
+    pub scanned_files: Vec<crate::models::ScannedFile>,
     pub project_result: crate::models::ProjectAnalysisResult,
     pub dependency_graph: crate::models::DependencyGraph,
 }
@@ -128,16 +132,31 @@ impl Orchestrator {
         Self::emit_phase_complete(app, phases::SCAN);
         check_cancelled(cancel)?;
 
-        // --- Phase 2: static analysis (+ RPA構造解析) ---
+        // --- Phase 2: static analysis (+ RPA/VBAマクロ構造解析) ---
         let mut static_results = Vec::new();
         let mut rpa_pairs: Vec<(crate::models::RpaComponent, String, String)> = Vec::new(); // (component, hash, raw_content)
+        let mut vba_pairs: Vec<(crate::models::VbaComponent, String, String)> = Vec::new(); // (component, hash, combined_source)
         let rpa_analyzers = rpa_analyzer::all_analyzers();
+        let vba_analyzers = vba_analyzer::all_analyzers();
         let total_scan = scan_result.total_count as u64;
         let mut processed: u64 = 0;
 
         for file in &scan_result.files {
             check_cancelled(cancel)?;
             let abs_path = project_path.join(&file.path);
+
+            if let Some(tool) = &file.macro_tool {
+                // マクロファイルはバイナリコンテナのためテキストとして読まず、専用アナライザに委ねる
+                if let Some(analyzer) = vba_analyzers.iter().find(|a| a.tool_name() == tool) {
+                    if let Ok((component, combined_source)) = analyzer.extract(Path::new(&file.path), &abs_path) {
+                        vba_pairs.push((component, file.hash.clone(), combined_source));
+                    }
+                }
+                processed += 1;
+                Self::emit_progress(app, phases::STATIC, processed, total_scan, Some(file.path.clone()));
+                continue;
+            }
+
             let Ok(content) = std::fs::read_to_string(&abs_path) else {
                 processed += 1;
                 continue; // 読み取り不能ファイルはスキップし継続（NFR-03）
@@ -177,7 +196,7 @@ impl Orchestrator {
         ));
 
         let semaphore = Arc::new(Semaphore::new(config.ai.concurrency.max(1) as usize));
-        let total_ai = (static_results.len() + rpa_pairs.len()) as u64;
+        let total_ai = (static_results.len() + rpa_pairs.len() + vba_pairs.len()) as u64;
         let mut tasks = tokio::task::JoinSet::new();
 
         for static_result in static_results.clone() {
@@ -224,6 +243,23 @@ impl Orchestrator {
             });
         }
 
+        for (component, hash, combined_source) in vba_pairs.clone() {
+            let permit_sem = semaphore.clone();
+            let analyzer = analyzer.clone();
+            let app = app.clone();
+            let cancel = cancel.clone();
+            tasks.spawn(async move {
+                let _permit = permit_sem.acquire_owned().await.ok();
+                if cancel.is_cancelled() {
+                    return None;
+                }
+                let path = component.component_path.clone();
+                let result = analyzer.analyze_vba_component(&hash, &component, &combined_source).await;
+                let _ = app.emit(events::FILE_COMPLETE, serde_json::json!({ "filePath": path, "ok": result.is_ok() }));
+                result.ok()
+            });
+        }
+
         let mut file_results = Vec::new();
         let mut ai_processed: u64 = 0;
         while let Some(joined) = tasks.join_next().await {
@@ -258,15 +294,16 @@ impl Orchestrator {
         // --- Phase 4: doc generation ---
         Self::emit_progress(app, phases::DOC_GEN, 0, 1, None);
         let rpa_components: Vec<crate::models::RpaComponent> = rpa_pairs.iter().map(|(c, _, _)| c.clone()).collect();
+        let vba_components: Vec<crate::models::VbaComponent> = vba_pairs.iter().map(|(c, _, _)| c.clone()).collect();
         let doc_output_dir = crate::domain::doc_generator::resolve_output_dir(project_path, &config.export.output_dir);
-        crate::domain::doc_generator::generate_all(
-            &doc_output_dir,
-            &project_result,
-            &static_results,
-            &file_results,
-            &rpa_components,
-            &config.export,
-        )?;
+        let detail_sources = DetailSources {
+            static_results: &static_results,
+            file_results: &file_results,
+            rpa_components: &rpa_components,
+            vba_components: &vba_components,
+            scanned_files: &scan_result.files,
+        };
+        crate::domain::doc_generator::generate_all(&doc_output_dir, &project_result, &detail_sources, &config.export)?;
         Self::emit_phase_complete(app, phases::DOC_GEN);
 
         let summary = AnalysisSummary {
@@ -283,6 +320,8 @@ impl Orchestrator {
             static_results,
             file_results,
             rpa_components,
+            vba_components,
+            scanned_files: scan_result.files,
             project_result,
             dependency_graph: dep_graph,
         })

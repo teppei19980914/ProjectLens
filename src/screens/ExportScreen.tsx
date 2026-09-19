@@ -6,8 +6,15 @@ import { DocTypes, ExportFormats, type DocType, type ExportFormat } from "@/lib/
 import { exportDocument, selectOutputFolder } from "@/lib/tauri";
 import { useUiStore } from "@/store/uiStore";
 
-const ALL_DOC_TYPES: DocType[] = [DocTypes.SYSTEM_SPEC, DocTypes.BASIC_DESIGN, DocTypes.DETAIL_DESIGN];
+const ALL_DOC_TYPES: DocType[] = [DocTypes.SYSTEM_SPEC, DocTypes.BASIC_DESIGN, DocTypes.DETAIL_DESIGN, DocTypes.DIRECTORY_STRUCTURE];
 const ALL_FORMATS: ExportFormat[] = [ExportFormats.MARKDOWN, ExportFormats.HTML, ExportFormats.JSON];
+
+const DOC_TYPE_LABEL_KEYS: Record<DocType, string> = {
+  [DocTypes.SYSTEM_SPEC]: "result.tabs.systemSpec",
+  [DocTypes.BASIC_DESIGN]: "result.tabs.basicDesign",
+  [DocTypes.DETAIL_DESIGN]: "result.tabs.detailDesign",
+  [DocTypes.DIRECTORY_STRUCTURE]: "result.tabs.directoryStructure",
+};
 
 export function ExportScreen() {
   const { t } = useTranslation();
@@ -51,7 +58,7 @@ export function ExportScreen() {
           {ALL_DOC_TYPES.map((docType) => (
             <label key={docType} className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={docTypes.includes(docType)} onChange={() => toggleDocType(docType)} />
-              {t(`result.tabs.${docType === DocTypes.SYSTEM_SPEC ? "systemSpec" : docType === DocTypes.BASIC_DESIGN ? "basicDesign" : "detailDesign"}`)}
+              {t(DOC_TYPE_LABEL_KEYS[docType])}
             </label>
           ))}
         </div>

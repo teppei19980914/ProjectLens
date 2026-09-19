@@ -8,10 +8,10 @@ pub mod validator;
 use crate::infra::ai_client::{retry, AiClient};
 use crate::infra::cache_repo::CacheRepo;
 use crate::models::config::AiConfig;
-use crate::models::constants::{PROMPT_VERSION, RPA_PROMPT_VERSION};
+use crate::models::constants::{PROMPT_VERSION, RPA_PROMPT_VERSION, VBA_PROMPT_VERSION};
 use crate::models::{
     AppError, AppResult, DependencyGraph, FileAnalysisResult, Issue, ProjectAnalysisResult, RpaComponent,
-    StaticAnalysisResult,
+    StaticAnalysisResult, VbaComponent,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -110,6 +110,34 @@ impl AiAnalyzer {
                 Ok(result)
             }
             Err(_) => Ok(fallback_rpa_result(component)),
+        }
+    }
+
+    /// VBAマクロコンポーネント単位AI解析（04_実装詳細.md §8.6。VBA_PROMPT_VERSIONで独立キャッシュ管理）。
+    pub async fn analyze_vba_component(&self, component_hash: &str, component: &VbaComponent, combined_source: &str) -> AppResult<FileAnalysisResult> {
+        let model_name = &self.ai_config.newtonx.assistant_uid;
+
+        if let Some((json, _)) = self.cache.get_file(component_hash, model_name, VBA_PROMPT_VERSION)? {
+            if let Ok(mut result) = serde_json::from_str::<FileAnalysisResult>(&json) {
+                result.cache_hit = true;
+                return Ok(result);
+            }
+        }
+
+        let modules_json = serde_json::to_string(&component.modules).unwrap_or_default();
+        let prompt = prompts::vba_analysis_prompt(&component.component_path, &component.workbook_name, &modules_json, combined_source);
+
+        match self.send_and_validate(&prompt, |raw| validator::parse_file_result(&component.component_path, raw)).await {
+            Ok(mut result) => {
+                result.cache_hit = false;
+                let token_count = estimate_tokens(&prompt);
+                let json = serde_json::to_string(&result).unwrap_or_default();
+                self.cache
+                    .save_file(component_hash, &component.component_path, model_name, VBA_PROMPT_VERSION, &json, token_count, self.cache_ttl_days)
+                    .ok();
+                Ok(result)
+            }
+            Err(_) => Ok(fallback_vba_result(component)),
         }
     }
 
@@ -255,6 +283,25 @@ fn fallback_rpa_result(component: &RpaComponent) -> FileAnalysisResult {
         role_summary: format!(
             "AI解析に失敗したため、構造解析結果のみで生成しています（フロー名: {}）。",
             component.flow_name
+        ),
+        public_apis: Vec::new(),
+        design_patterns: Vec::new(),
+        importance_score: 5,
+        potential_issues: vec![Issue {
+            severity: crate::models::Severity::Medium,
+            description: "AI解析が失敗またはタイムアウトしました。".into(),
+            suggestion: "再解析を試してください。".into(),
+        }],
+        cache_hit: false,
+    }
+}
+
+fn fallback_vba_result(component: &VbaComponent) -> FileAnalysisResult {
+    FileAnalysisResult {
+        file_path: component.component_path.clone(),
+        role_summary: format!(
+            "AI解析に失敗したため、構造解析結果のみで生成しています（ワークブック: {}）。",
+            component.workbook_name
         ),
         public_apis: Vec::new(),
         design_patterns: Vec::new(),

@@ -48,4 +48,6 @@ tree-sitter-go = "0.23"
 tree-sitter-c-sharp = "0.23"
 tree-sitter-c = "0.23"
 tree-sitter-cpp = "0.23"
+zip = "2"
+cfb = "0.9"
 

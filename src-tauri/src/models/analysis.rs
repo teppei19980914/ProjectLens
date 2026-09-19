@@ -219,6 +219,43 @@ pub struct RpaStep {
 }
 
 // ---------------------------------------------------------------------
+// VBAマクロ構造解析の共通中間表現（04_実装詳細.md §8.6）
+// ---------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VbaComponent {
+    pub component_path: String,
+    pub workbook_name: String,
+    pub modules: Vec<VbaModule>,
+    /// 参照設定(Reference)/外部ライブラリ
+    pub external_references: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VbaModule {
+    pub name: String,
+    pub kind: String, // "standard" | "class" | "form" | "document"
+    pub loc: u32,
+}
+
+// ---------------------------------------------------------------------
+// ディレクトリ構造ドキュメント（04_実装詳細.md §11。オプトインの4番目の成果物）
+// ---------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectoryNode {
+    pub name: String,
+    /// プロジェクトルートからの相対パス（ルート自身は空文字）
+    pub path: String,
+    pub kind: String, // "dir" | "file"
+    pub children: Vec<DirectoryNode>,
+    pub size_bytes: Option<u64>,
+}
+
+// ---------------------------------------------------------------------
 // スキャン結果
 // ---------------------------------------------------------------------
 
@@ -230,6 +267,8 @@ pub struct ScannedFile {
     pub size_bytes: u64,
     /// RPAとして検出された場合、そのツール種別（04_実装詳細.md §8.1）
     pub rpa_tool: Option<String>,
+    /// マクロ（VBA等）として検出された場合、そのツール種別（04_実装詳細.md §8.6）
+    pub macro_tool: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

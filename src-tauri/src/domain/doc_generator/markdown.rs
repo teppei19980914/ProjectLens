@@ -2,7 +2,7 @@
 //! MD/HTML/JSONは本ファイルが組み立てるMarkdownを起点にレンダラのみ差し替える
 //! （CLAUDE.md 原則2.2.2「解析結果→中間表現→各レンダラ」）。
 
-use crate::models::{BasicDesign, FileAnalysisResult, RpaComponent, StaticAnalysisResult, SystemSpec};
+use crate::models::{BasicDesign, DirectoryNode, FileAnalysisResult, RpaComponent, StaticAnalysisResult, SystemSpec, VbaComponent};
 
 pub fn system_spec(spec: &SystemSpec) -> String {
     let mut out = String::new();
@@ -155,6 +155,79 @@ pub fn detail_design_for_rpa(file_result: &FileAnalysisResult, component: &RpaCo
         out.push_str(&format!("- [{}] {}（提案: {}）\n", severity_ja(&issue.severity), issue.description, issue.suggestion));
     }
     out
+}
+
+pub fn detail_design_for_vba(file_result: &FileAnalysisResult, component: &VbaComponent) -> String {
+    let mut out = String::new();
+    out.push_str(&format!("# 詳細設計書（VBAマクロ）: {}\n\n", component.component_path));
+    out.push_str(&format!("- ワークブック: {}\n\n", component.workbook_name));
+    out.push_str("## 役割要約\n\n");
+    out.push_str(&file_result.role_summary);
+    out.push_str("\n\n## 公開Sub/Function\n\n");
+    if file_result.public_apis.is_empty() {
+        out.push_str("なし\n\n");
+    } else {
+        for api in &file_result.public_apis {
+            out.push_str(&format!("- {}: {}\n", api.name, api.description));
+        }
+        out.push('\n');
+    }
+    out.push_str("## マクロの処理パターン\n\n");
+    for p in &file_result.design_patterns {
+        out.push_str(&format!("- {p}\n"));
+    }
+    out.push_str("\n## モジュール構成\n\n");
+    if component.modules.is_empty() {
+        out.push_str("なし\n\n");
+    } else {
+        out.push_str("| モジュール名 | 種別 | 行数 |\n|---|---|---|\n");
+        for m in &component.modules {
+            out.push_str(&format!("| {} | {} | {} |\n", m.name, m.kind, m.loc));
+        }
+        out.push('\n');
+    }
+    out.push_str(&format!(
+        "## 外部参照\n\n{}\n\n",
+        if component.external_references.is_empty() {
+            "なし".to_string()
+        } else {
+            component.external_references.join(", ")
+        }
+    ));
+    out.push_str("## 潜在的問題\n\n");
+    if file_result.potential_issues.is_empty() {
+        out.push_str("検出なし\n\n");
+    } else {
+        for issue in &file_result.potential_issues {
+            out.push_str(&format!("- [{}] {}（提案: {}）\n", severity_ja(&issue.severity), issue.description, issue.suggestion));
+        }
+    }
+    out
+}
+
+/// ディレクトリ構造ドキュメント（04_実装詳細.md §11。オプトインの4番目の成果物）。
+/// AI/静的解析結果に依存せず、スキャン結果のみから組み立てる。
+pub fn directory_structure(tree: &DirectoryNode) -> String {
+    let mut out = String::new();
+    out.push_str("# ディレクトリ構造\n\n```\n");
+    out.push_str(&tree.name);
+    out.push('\n');
+    render_tree_children(&tree.children, "", &mut out);
+    out.push_str("```\n");
+    out
+}
+
+fn render_tree_children(children: &[DirectoryNode], prefix: &str, out: &mut String) {
+    let count = children.len();
+    for (i, child) in children.iter().enumerate() {
+        let is_last = i == count - 1;
+        let connector = if is_last { "└── " } else { "├── " };
+        let suffix = if child.kind == "dir" { "/" } else { "" };
+        out.push_str(&format!("{prefix}{connector}{}{}\n", child.name, suffix));
+
+        let child_prefix = format!("{prefix}{}", if is_last { "    " } else { "│   " });
+        render_tree_children(&child.children, &child_prefix, out);
+    }
 }
 
 fn severity_ja(s: &crate::models::Severity) -> &'static str {

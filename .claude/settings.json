@@ -12,7 +12,9 @@
       "Bash(xxd start-dev.bat)",
       "Bash(python3 -c ' *)",
       "Bash(xargs -I{} echo {})",
-      "PowerShell(Get-ChildItem -Path \"$env:APPDATA\\\\ProjectLens\" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName, Length, LastWriteTime | Format-List)"
+      "PowerShell(Get-ChildItem -Path \"$env:APPDATA\\\\ProjectLens\" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName, Length, LastWriteTime | Format-List)",
+      "Bash(cargo check *)",
+      "Bash(cargo test *)"
     ]
   }
 }

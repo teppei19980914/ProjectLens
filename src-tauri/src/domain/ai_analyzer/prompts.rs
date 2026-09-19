@@ -1,6 +1,7 @@
-//! プロンプト本文（04_実装詳細.md §6、§8.4）。プロンプト本文とバージョンは本ファイルに集約する
-//! （CLAUDE.md 原則2.1.3）。プロンプトを変更したら `constants::PROMPT_VERSION` /
-//! `constants::RPA_PROMPT_VERSION` を必ず更新すること（キャッシュキーと連動）。
+//! プロンプト本文（04_実装詳細.md §6、§8.4、§8.6）。プロンプト本文とバージョンは本ファイルに
+//! 集約する（CLAUDE.md 原則2.1.3）。プロンプトを変更したら `constants::PROMPT_VERSION` /
+//! `constants::RPA_PROMPT_VERSION` / `constants::VBA_PROMPT_VERSION` を必ず更新すること
+//! （キャッシュキーと連動）。
 
 const FILE_SCHEMA: &str = r#"{
   "roleSummary": "string: このファイルの責務の要約（日本語・200字以内）",
@@ -128,5 +129,30 @@ pub fn rpa_analysis_prompt(component_path: &str, tool: &str, intermediate_repr_j
         tool = tool,
         intermediate = intermediate_repr_json,
         raw = raw_content,
+    )
+}
+
+/// VBAマクロ解析プロンプト（04_実装詳細.md §8.6）。§5.1スキーマを流用し、
+/// publicApisを「公開Sub/Function（Public宣言のプロシージャ）」、
+/// designPatternsを「マクロの処理パターン（自動化/データ加工/UI操作/外部アプリ連携等）」として解釈させる。
+pub fn vba_analysis_prompt(component_path: &str, workbook_name: &str, modules_json: &str, combined_source: &str) -> String {
+    format!(
+        "あなたはVBA（Visual Basic for Applications）マクロの専門家です。以下のExcelワークブックに含まれるVBAマクロを解析してください。\n\n\
+# 制約\n\
+- 応答は指定するJSON形式のみで返すこと。前置き・説明文・コードフェンスは一切含めないこと\n\
+- すべての文字列値は日本語で記述すること\n\
+- publicApisには「公開Sub/Function（Public宣言のプロシージャ）」を、designPatternsには「マクロの処理パターン（自動化/データ加工/UI操作/外部アプリ連携等）」を記述すること\n\
+- 複数モジュールで構成される場合は、モジュール間の呼び出し関係も踏まえて役割要約を記述すること\n\n\
+# 出力JSON形式\n{schema}\n\n\
+# ワークブック情報\n\
+- パス: {path}\n\
+- ワークブック名: {workbook}\n\
+- モジュール構成（共通中間表現）: {modules}\n\n\
+# VBAソース（全モジュール結合）\n{source}\n",
+        schema = FILE_SCHEMA,
+        path = component_path,
+        workbook = workbook_name,
+        modules = modules_json,
+        source = combined_source,
     )
 }

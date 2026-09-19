@@ -5,7 +5,7 @@ use crate::infra::ai_client::AiClient;
 use crate::infra::cache_repo::CacheRepo;
 use crate::infra::config_store::ConfigStore;
 use crate::infra::history_repo::HistoryRepo;
-use crate::models::{AppError, AppResult, FileAnalysisResult, ProjectAnalysisResult, RpaComponent, StaticAnalysisResult};
+use crate::models::{AppError, AppResult, FileAnalysisResult, ProjectAnalysisResult, RpaComponent, ScannedFile, StaticAnalysisResult, VbaComponent};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -17,6 +17,8 @@ pub struct LastAnalysisData {
     pub static_results: Vec<StaticAnalysisResult>,
     pub file_results: Vec<FileAnalysisResult>,
     pub rpa_components: Vec<RpaComponent>,
+    pub vba_components: Vec<VbaComponent>,
+    pub scanned_files: Vec<ScannedFile>,
     pub project_path: PathBuf,
 }
 

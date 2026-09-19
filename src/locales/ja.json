@@ -46,7 +46,8 @@
     "tabs": {
       "systemSpec": "システム仕様書",
       "basicDesign": "システム基本設計書",
-      "detailDesign": "詳細設計書"
+      "detailDesign": "詳細設計書",
+      "directoryStructure": "ディレクトリ構造"
     },
     "importanceScore": "重要度",
     "cycleWarning": "循環依存が検出されました",
@@ -92,7 +93,8 @@
       "excludePatterns": "除外パターン",
       "maxFileSizeKb": "ファイルサイズ上限 (KB)",
       "maxFileCount": "ファイル数上限",
-      "rpaEnabled": "RPA定義ファイルの解析を有効にする"
+      "rpaEnabled": "RPA定義ファイルの解析を有効にする",
+      "vbaEnabled": "Excel VBAマクロの解析を有効にする"
     },
     "ai": {
       "concurrency": "並列リクエスト数",

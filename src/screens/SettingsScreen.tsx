@@ -69,6 +69,14 @@ export function SettingsScreen() {
           />
           {t("settings.scan.rpaEnabled")}
         </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={config.scan.vba.enabled}
+            onChange={(e) => update((d) => ({ ...d, scan: { ...d.scan, vba: { ...d.scan.vba, enabled: e.target.checked } } }))}
+          />
+          {t("settings.scan.vbaEnabled")}
+        </label>
       </Card>
 
       <Card className="flex flex-col gap-3">

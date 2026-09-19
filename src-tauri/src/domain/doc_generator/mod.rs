@@ -1,12 +1,17 @@
 //! ドキュメント生成（03_設計書.md §2.2 DocGenerator、04_実装詳細.md §11）。
-//! システム仕様書・システム基本設計書・詳細設計書（ファイル/RPAコンポーネント単位）の
-//! 3成果物を、共通の中間表現（markdown.rs）からMD/HTML/JSONへレンダリングする。
+//! システム仕様書・システム基本設計書・詳細設計書（ファイル/RPA/VBAコンポーネント単位）・
+//! ディレクトリ構造（オプトイン）の4成果物を、共通の中間表現（markdown.rs）から
+//! MD/HTML/JSONへレンダリングする。
 
+pub mod directory_tree;
 pub mod markdown;
 
 use crate::models::config::ExportConfig;
 use crate::models::constants::{doc_types, export_paths};
-use crate::models::{AppError, AppResult, ExportResult, ExportedFile, FileAnalysisResult, ProjectAnalysisResult, RpaComponent, StaticAnalysisResult};
+use crate::models::{
+    AppError, AppResult, ExportResult, ExportedFile, FileAnalysisResult, ProjectAnalysisResult, RpaComponent, ScannedFile,
+    StaticAnalysisResult, VbaComponent,
+};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -18,13 +23,21 @@ pub fn resolve_output_dir(project_path: &Path, configured: &str) -> PathBuf {
     }
 }
 
-/// config.export の既定設定に従い3成果物を生成する（Orchestrator Phase4から呼ばれる）。
+/// 詳細設計書・ディレクトリ構造の組み立てに使う解析結果一式（CLAUDE.md原則2.2.2）。
+/// 成果物追加のたびに `generate`/`generate_all` の位置引数を増やさないための集約構造体。
+pub struct DetailSources<'a> {
+    pub static_results: &'a [StaticAnalysisResult],
+    pub file_results: &'a [FileAnalysisResult],
+    pub rpa_components: &'a [RpaComponent],
+    pub vba_components: &'a [VbaComponent],
+    pub scanned_files: &'a [ScannedFile],
+}
+
+/// config.export の既定設定に従い成果物を生成する（Orchestrator Phase4から呼ばれる）。
 pub fn generate_all(
     output_dir: &Path,
     project_result: &ProjectAnalysisResult,
-    static_results: &[StaticAnalysisResult],
-    file_results: &[FileAnalysisResult],
-    rpa_components: &[RpaComponent],
+    sources: &DetailSources,
     export_config: &ExportConfig,
 ) -> AppResult<ExportResult> {
     generate(
@@ -33,23 +46,18 @@ pub fn generate_all(
         &export_config.default_format,
         export_config.embed_mermaid,
         project_result,
-        static_results,
-        file_results,
-        rpa_components,
+        sources,
     )
 }
 
 /// 明示的な成果物種別・形式を指定して生成する（エクスポート画面からの再出力用）。
-#[allow(clippy::too_many_arguments)]
 pub fn generate(
     output_dir: &Path,
     doc_type_list: &[String],
     format: &str,
     embed_mermaid: bool,
     project_result: &ProjectAnalysisResult,
-    static_results: &[StaticAnalysisResult],
-    file_results: &[FileAnalysisResult],
-    rpa_components: &[RpaComponent],
+    sources: &DetailSources,
 ) -> AppResult<ExportResult> {
     std::fs::create_dir_all(output_dir).map_err(|e| AppError::export(format!("出力先の作成に失敗しました: {e}")))?;
 
@@ -83,16 +91,21 @@ pub fn generate(
         std::fs::create_dir_all(&detail_dir).map_err(|e| AppError::export(format!("詳細設計書出力先の作成に失敗しました: {e}")))?;
 
         let static_by_path: HashMap<&str, &StaticAnalysisResult> =
-            static_results.iter().map(|r| (r.file_path.as_str(), r)).collect();
+            sources.static_results.iter().map(|r| (r.file_path.as_str(), r)).collect();
         let rpa_by_path: HashMap<&str, &RpaComponent> =
-            rpa_components.iter().map(|c| (c.component_path.as_str(), c)).collect();
+            sources.rpa_components.iter().map(|c| (c.component_path.as_str(), c)).collect();
+        let vba_by_path: HashMap<&str, &VbaComponent> =
+            sources.vba_components.iter().map(|c| (c.component_path.as_str(), c)).collect();
 
-        for file_result in file_results {
+        for file_result in sources.file_results {
             let file_name = sanitize_filename(&file_result.file_path);
             let path = detail_dir.join(format!("{file_name}.{ext}"));
 
             if let Some(component) = rpa_by_path.get(file_result.file_path.as_str()) {
                 let md = markdown::detail_design_for_rpa(file_result, component);
+                write_rendered(&path, &md, format, &(file_result, component))?;
+            } else if let Some(component) = vba_by_path.get(file_result.file_path.as_str()) {
+                let md = markdown::detail_design_for_vba(file_result, component);
                 write_rendered(&path, &md, format, &(file_result, component))?;
             } else {
                 let static_result = static_by_path.get(file_result.file_path.as_str()).copied();
@@ -106,6 +119,24 @@ pub fn generate(
                 source_file_path: Some(file_result.file_path.clone()),
             });
         }
+    }
+
+    if doc_type_list.iter().any(|t| t == doc_types::DIRECTORY_STRUCTURE) {
+        let project_name = output_dir
+            .parent()
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+            .unwrap_or("project")
+            .to_string();
+        let tree = directory_tree::build(sources.scanned_files, &project_name);
+        let md = markdown::directory_structure(&tree);
+        let path = output_dir.join(format!("{}.{}", export_paths::DIRECTORY_STRUCTURE_FILENAME, ext));
+        write_rendered(&path, &md, format, &tree)?;
+        files.push(ExportedFile {
+            doc_type: doc_types::DIRECTORY_STRUCTURE.into(),
+            path: path.to_string_lossy().to_string(),
+            source_file_path: None,
+        });
     }
 
     Ok(ExportResult {

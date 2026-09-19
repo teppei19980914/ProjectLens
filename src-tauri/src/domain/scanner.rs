@@ -2,6 +2,7 @@
 //! .gitignore尊重・除外パターン・上限判定・SHA-256ハッシュ生成 + RPA検出を行う。
 
 use crate::domain::rpa_analyzer::{self, RpaAnalyzer};
+use crate::domain::vba_analyzer::{self, VbaContainerAnalyzer};
 use crate::models::config::ScanConfig;
 use crate::models::{AppError, AppResult, ScanResult, ScannedFile};
 use ignore::WalkBuilder;
@@ -28,6 +29,7 @@ impl<'a> Scanner<'a> {
         }
 
         let analyzers = rpa_analyzer::all_analyzers();
+        let vba_analyzers = vba_analyzer::all_analyzers();
         let normal_extensions: Vec<String> = self
             .config
             .extensions
@@ -93,12 +95,14 @@ impl<'a> Scanner<'a> {
 
             let is_normal_code_ext = normal_extensions.iter().any(|e| e == &ext);
 
-            // RPA疑い判定は軽量に: 通常コード拡張子でない場合のみ、内容を読んでRPAアナライザに確認させる
-            // （通常コードファイルまで毎回読み込むとI/Oコストが増えるため）。
+            // RPA/マクロ疑い判定は軽量に: 通常コード拡張子でない場合のみ、内容を確認して
+            // 各アナライザに判定させる（通常コードファイルまで毎回読み込むとI/Oコストが増えるため）。
+            // 非コードファイルの足切りラインはRPA/VBA両方の上限のうち大きい方を採用し、
+            // 個別の上限は各アナライザ側の判定材料として別途扱う（既存RPA挙動は変えない）。
             let size_limit_kb = if is_normal_code_ext {
                 self.config.max_file_size_kb
             } else {
-                self.config.rpa.max_file_size_kb
+                self.config.rpa.max_file_size_kb.max(self.config.vba.max_file_size_kb)
             };
             if size_bytes > size_limit_kb * 1024 {
                 continue;
@@ -110,8 +114,14 @@ impl<'a> Scanner<'a> {
                 None
             };
 
-            if !is_normal_code_ext && rpa_tool.is_none() {
-                // 通常コードでもRPAでもないファイルは対象外
+            let macro_tool = if self.config.vba.enabled && !is_normal_code_ext && rpa_tool.is_none() {
+                detect_macro(relative_path, path, &vba_analyzers)
+            } else {
+                None
+            };
+
+            if !is_normal_code_ext && rpa_tool.is_none() && macro_tool.is_none() {
+                // 通常コードでもRPAでもマクロでもないファイルは対象外
                 let _ = file_name; // 将来: 追加の判定ロジックで使用予定
                 continue;
             }
@@ -127,6 +137,7 @@ impl<'a> Scanner<'a> {
                 hash,
                 size_bytes,
                 rpa_tool,
+                macro_tool,
             });
         }
 
@@ -154,6 +165,16 @@ fn detect_rpa(
 ) -> Option<String> {
     let content = std::fs::read_to_string(absolute_path).ok()?;
     rpa_analyzer::detect_tool(analyzers, relative_path, &content).map(|a| a.tool_name().to_string())
+}
+
+/// マクロ（VBA等、バイナリコンテナ）ファイルの検出。RPAと異なりテキストとして読めないため、
+/// 各アナライザ実装（例: xlsmはzip中央ディレクトリの内容確認）に判定を委ねる。
+fn detect_macro(
+    relative_path: &Path,
+    absolute_path: &Path,
+    analyzers: &[Box<dyn VbaContainerAnalyzer>],
+) -> Option<String> {
+    vba_analyzer::detect_tool(analyzers, relative_path, absolute_path).map(|a| a.tool_name().to_string())
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
